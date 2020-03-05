@@ -44,6 +44,7 @@ impl TagIter {
     fn read_u32(&mut self) -> io::Result<u32> {
         self.buf.read_u32::<LE>()
     }
+    #[allow(dead_code)]
     fn read_u64(&mut self) -> io::Result<u64> {
         self.buf.read_u64::<LE>()
     }
@@ -90,6 +91,7 @@ impl TagIter {
                     self.read_u32()?,
                     self.read_u32()?,
                 ),
+                #[cfg(feature = "hvm")]
                 TagType::HybridRuntime => Tag::HybridRuntime(
                     self.read_u64()?,
                     self.read_u64()?,

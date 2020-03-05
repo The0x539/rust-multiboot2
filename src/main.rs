@@ -5,12 +5,10 @@ fn main() -> std::io::Result<()> {
     let f = std::fs::File::open("nautilus_hrt.bin")?;
     for tag in header::iter_tags(f, 0x1000)? {
         println!("{:#X?}", tag);
-        if let Ok(header::Tag::HybridRuntime(_,_,_,_,_,_)) = tag {
-            println!("hrt");
-        }
     }
 
     let bootinfo_tags = [
+        #[cfg(feature = "hvm")]
         bootinfo::Tag::HybridRuntime {
             total_num_apics: 1,
             first_hrt_apic_id: 0,

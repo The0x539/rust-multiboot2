@@ -17,6 +17,7 @@ pub mod TagType {
     pub const EntryAddrEfi32: u16 = 8;
     pub const EntryAddrEfi64: u16 = 9;
     pub const Relocatable: u16 = 10;
+    #[cfg(feature = "hvm")]
     pub const HybridRuntime: u16 = 0xF00D;
 }
 
@@ -49,6 +50,7 @@ pub enum Tag {
         u32, //align
         u32, //preference
     ),
+    #[cfg(feature = "hvm")]
     HybridRuntime (
         u64, //flags
         u64, //gpa_map_req
