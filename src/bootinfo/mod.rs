@@ -1,5 +1,5 @@
 use std::mem::size_of;
-use std::io::Write;
+use std::io::{self, Write, Seek, SeekFrom};
 use byteorder::{WriteBytesExt, LE};
 
 pub struct MemMapEntry {
@@ -59,7 +59,7 @@ impl Tag {
         } as u32
     }
 
-    fn write_to<F: Write>(&self, mut buf: F) -> std::io::Result<()> {
+    fn write_tag<F: Write>(&self, mut buf: F) -> io::Result<()> {
         buf.write_u32::<LE>(self.get_type())?;
         buf.write_u32::<LE>(self.get_size())?;
 
@@ -92,4 +92,34 @@ impl Tag {
         }
         Ok(())
     }
+}
+
+pub fn bootinfo_size(tags: &[Tag]) -> u32 {
+    // for some reason, rust is complaining about adding 8 to the list comp
+    // so we're doing it the old fashionwed way
+    let mut sum: u32 = 8;
+    for tag in tags {
+        sum += tag.get_size();
+    }
+    sum
+}
+
+pub fn write_bootinfo<F: Write + Seek>(
+    tags: &[Tag],
+    mut buf: F,
+    offset: u64,
+) -> io::Result<()> {
+    if let Some(Tag::End) = tags.last() {} else {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "bootinfo tags must end with Tag::End"));
+    }
+
+    buf.seek(SeekFrom::Start(offset))?;
+
+    buf.write_u32::<LE>(bootinfo_size(tags))?;
+    buf.write_u32::<LE>(0)?;
+
+    for tag in tags {
+        Tag::write_tag(tag, &mut buf)?;
+    }
+    Ok(())
 }
