@@ -1,5 +1,12 @@
 use std::mem::size_of;
-use std::io::{self, Write, Seek, SeekFrom};
+use std::io::{
+    Result,
+    Error,
+    ErrorKind,
+    Write,
+    Seek,
+    SeekFrom,
+};
 use byteorder::{WriteBytesExt, LE};
 
 #[derive(Debug)]
@@ -70,7 +77,7 @@ impl Tag {
         } as u32
     }
 
-    fn write_tag<F: Write>(&self, mut buf: F) -> io::Result<()> {
+    fn write_tag<F: Write>(&self, mut buf: F) -> Result<()> {
         buf.write_u32::<LE>(self.get_type())?;
         buf.write_u32::<LE>(self.get_size())?;
 
@@ -123,9 +130,9 @@ pub fn write_bootinfo<F: Write + Seek>(
     tags: &[Tag],
     mut buf: F,
     offset: u64,
-) -> io::Result<()> {
+) -> Result<()> {
     if let Some(Tag::End) = tags.last() {} else {
-        return Err(io::Error::new(io::ErrorKind::InvalidData, "bootinfo tags must end with Tag::End"));
+        return Err(Error::new(ErrorKind::InvalidData, "bootinfo tags must end with Tag::End"));
     }
 
     buf.seek(SeekFrom::Start(offset))?;

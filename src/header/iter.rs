@@ -3,7 +3,9 @@ use super::Header;
 use byteorder::{ReadBytesExt, LE};
 
 use std::io::{
-    self,
+    Error,
+    ErrorKind,
+    Result,
     Read,
     Seek,
     SeekFrom,
@@ -19,7 +21,7 @@ impl TagIter {
     pub fn new<F: Read + Seek>(
         mut kernel_image: F,
         offset: u64,
-    ) -> io::Result<Self> {
+    ) -> Result<Self> {
         kernel_image.seek(SeekFrom::Start(offset))?;
         let header = Header {
             magic:         kernel_image.read_u32::<LE>()?,
@@ -29,7 +31,7 @@ impl TagIter {
         };
 
         if !header.is_valid() {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "No valid Multiboot2 header at offset"));
+            return Err(Error::new(ErrorKind::InvalidData, "No valid Multiboot2 header at offset"));
         }
 
         let mut buf: Vec<u8> = vec![0; header.header_length as usize - 16];
@@ -38,20 +40,20 @@ impl TagIter {
         Ok(TagIter {done: false, buf: Cursor::new(buf)})
     }
 
-    fn read_u16(&mut self) -> io::Result<u16> {
+    fn read_u16(&mut self) -> Result<u16> {
         self.buf.read_u16::<LE>()
     }
-    fn read_u32(&mut self) -> io::Result<u32> {
+    fn read_u32(&mut self) -> Result<u32> {
         self.buf.read_u32::<LE>()
     }
     #[allow(dead_code)]
-    fn read_u64(&mut self) -> io::Result<u64> {
+    fn read_u64(&mut self) -> Result<u64> {
         self.buf.read_u64::<LE>()
     }
 
-    fn next_tag(&mut self) -> io::Result<Tag> {
+    fn next_tag(&mut self) -> Result<Tag> {
         if self.done {
-            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "No more tags"));
+            return Err(Error::new(ErrorKind::UnexpectedEof, "No more tags"));
         }
 
         let tag_type  = self.read_u16()?;
@@ -109,7 +111,7 @@ impl TagIter {
     }
 }
 impl Iterator for TagIter {
-    type Item = io::Result<Tag>;
+    type Item = Result<Tag>;
     fn next(&mut self) -> Option<Self::Item> {
         if self.done {
             return None;

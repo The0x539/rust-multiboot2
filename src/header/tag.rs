@@ -1,10 +1,4 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
-pub const TAG_OPTIONAL: u16 = 1;
-
-// Basically an enum
-#[allow(non_snake_case, non_upper_case_globals)]
+#[allow(non_snake_case, non_upper_case_globals)] // this is basically an enum
 pub mod TagType {
     pub const End: u16 = 0;
     pub const InfoRequest: u16 = 1;

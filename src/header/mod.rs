@@ -1,10 +1,4 @@
-extern crate byteorder;
-
-use std::io::{
-    self,
-    Read,
-    Seek,
-};
+use std::io::{Result, Read, Seek};
 
 pub const HEADER_MAGIC: u32 = 0xE85250D6;
 
@@ -28,12 +22,12 @@ impl Header {
 }
 
 mod tag;
-pub use self::tag::Tag;
+pub use self::tag::{Tag, TagType};
 mod iter;
 
 pub fn iter_tags<F: Read + Seek>(
     kernel_image: F,
     offset: u64,
-) -> io::Result<iter::TagIter> {
+) -> Result<iter::TagIter> {
     iter::TagIter::new(kernel_image, offset)
 }
