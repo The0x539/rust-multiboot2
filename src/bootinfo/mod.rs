@@ -6,7 +6,7 @@ pub struct MemMapEntry {
     pub base_addr: u64,
     pub length: u64,
     pub entry_type: u32,
-    reserved: u32,
+    // 4 reserved bytes as padding
 }
 
 #[allow(non_snake_case, non_upper_case_globals)]
@@ -17,6 +17,7 @@ pub mod TagType {
     pub const HybridRuntime: u32 = 0xF00DF00D;
 }
 
+#[derive(Debug)]
 pub enum Tag {
     BasicMeminfo {
         mem_lower: u32,
@@ -28,7 +29,7 @@ pub enum Tag {
     HybridRuntime {
         total_num_apics: u32,
         first_hrt_apic_id: u32,
-        have_hrt_ioapic: u32,
+        have_hrt_ioapic: bool, //4 bytes
         first_hrt_ioapic_entry: u32,
         cpu_freq_khz: u64,
         hrt_flags: u64,
@@ -36,25 +37,30 @@ pub enum Tag {
         first_hrt_gpa: u64,
         boot_state_gpa: u64,
         gva_offset: u64,
+        comm_page_gpa: u64,
+        hrt_int_vector: u8,
+        // 7 reserved bytes as padding
     },
     End,
 }
 
 impl Tag {
     fn get_type(&self) -> u32 {
+        #[allow(unused_variables)]
         match self {
-            Tag::BasicMeminfo{mem_lower: _, mem_upper: _} => TagType::BasicMeminfo,
-            Tag::MemMap{entries: _} => TagType::MemMap,
-            Tag::HybridRuntime{total_num_apics: _, first_hrt_apic_id: _, have_hrt_ioapic: _, first_hrt_ioapic_entry: _, cpu_freq_khz: _, hrt_flags: _, max_mem_mapped: _, first_hrt_gpa: _, boot_state_gpa: _, gva_offset: _,} => TagType::HybridRuntime,
+            Tag::BasicMeminfo{mem_lower, mem_upper} => TagType::BasicMeminfo,
+            Tag::MemMap{entries} => TagType::MemMap,
+            Tag::HybridRuntime{total_num_apics, first_hrt_apic_id, have_hrt_ioapic, first_hrt_ioapic_entry, cpu_freq_khz, hrt_flags, max_mem_mapped, first_hrt_gpa, boot_state_gpa, gva_offset, comm_page_gpa, hrt_int_vector} => TagType::HybridRuntime,
             Tag::End => TagType::End,
         }
     }
 
     fn get_size(&self) -> u32 {
-        8 + match self {
-            Tag::BasicMeminfo{mem_lower: _, mem_upper: _} => 8,
+        #[allow(unused_variables)]
+        return 8 + match self {
+            Tag::BasicMeminfo{mem_lower, mem_upper} => 8,
             Tag::MemMap{entries} => size_of::<MemMapEntry>() * entries.len(),
-            Tag::HybridRuntime{total_num_apics: _, first_hrt_apic_id: _, have_hrt_ioapic: _, first_hrt_ioapic_entry: _, cpu_freq_khz: _, hrt_flags: _, max_mem_mapped: _, first_hrt_gpa: _, boot_state_gpa: _, gva_offset: _} => 4 + 4 + 4 + 4 + 8 + 8 + 8 + 8 + 8 + 8,
+            Tag::HybridRuntime{total_num_apics, first_hrt_apic_id, have_hrt_ioapic, first_hrt_ioapic_entry, cpu_freq_khz, hrt_flags, max_mem_mapped, first_hrt_gpa, boot_state_gpa, gva_offset, comm_page_gpa, hrt_int_vector} => 80,
             Tag::End => 0,
         } as u32
     }
@@ -76,10 +82,10 @@ impl Tag {
                     buf.write_u32::<LE>(0)?;
                 }
             },
-            Tag::HybridRuntime {total_num_apics, first_hrt_apic_id, have_hrt_ioapic, first_hrt_ioapic_entry, cpu_freq_khz, hrt_flags, max_mem_mapped, first_hrt_gpa, boot_state_gpa, gva_offset} => {
+            Tag::HybridRuntime {total_num_apics, first_hrt_apic_id, have_hrt_ioapic, first_hrt_ioapic_entry, cpu_freq_khz, hrt_flags, max_mem_mapped, first_hrt_gpa, boot_state_gpa, gva_offset, comm_page_gpa, hrt_int_vector} => {
                 buf.write_u32::<LE>(*total_num_apics)?;
                 buf.write_u32::<LE>(*first_hrt_apic_id)?;
-                buf.write_u32::<LE>(*have_hrt_ioapic)?;
+                buf.write_u32::<LE>(*have_hrt_ioapic as u32)?;
                 buf.write_u32::<LE>(*first_hrt_ioapic_entry)?;
                 buf.write_u64::<LE>(*cpu_freq_khz)?;
                 buf.write_u64::<LE>(*hrt_flags)?;
@@ -87,6 +93,9 @@ impl Tag {
                 buf.write_u64::<LE>(*first_hrt_gpa)?;
                 buf.write_u64::<LE>(*boot_state_gpa)?;
                 buf.write_u64::<LE>(*gva_offset)?;
+                buf.write_u64::<LE>(*comm_page_gpa)?;
+                buf.write_u8(*hrt_int_vector)?;
+                buf.write(&[0,0,0,0,0,0,0])?;
             },
             Tag::End => {},
         }
