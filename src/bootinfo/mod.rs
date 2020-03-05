@@ -2,6 +2,7 @@ use std::mem::size_of;
 use std::io::{self, Write, Seek, SeekFrom};
 use byteorder::{WriteBytesExt, LE};
 
+#[derive(Debug)]
 pub struct MemMapEntry {
     pub base_addr: u64,
     pub length: u64,
