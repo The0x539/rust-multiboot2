@@ -21,6 +21,33 @@ impl Header {
     }
 }
 
+// Defined by Multiboot2 spec
+const SEARCH_END: usize = 32768;
+const ALIGNMENT: usize = 8;
+
+pub fn find_header<F: Read + Seek>(
+    mut kernel_image: F
+) -> Result<Option<u64>> {
+    for offset in (0..SEARCH_END).step_by(ALIGNMENT) {
+        kernel_image.seek(SeekFrom::Start(offset as u64))?;
+
+        let word = kernel_image.read_u32::<LE>()?;
+
+        if word == HEADER_MAGIC {
+            let header = Header {
+                magic:         word,
+                architecture:  kernel_image.read_u32::<LE>()?,
+                header_length: kernel_image.read_u32::<LE>()?,
+                checksum:      kernel_image.read_u32::<LE>()?,
+            };
+            if header.is_valid() {
+                return Ok(Some(offset as u64));
+            }
+        }
+    }
+    Ok(None)
+}
+
 mod tag;
 pub use self::tag::{Tag, TagType};
 mod iter;

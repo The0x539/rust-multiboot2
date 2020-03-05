@@ -4,7 +4,10 @@ mod pseudo_enum;
 
 fn main() -> std::io::Result<()> {
     let f = std::fs::File::open("nautilus_hrt.bin")?;
-    for tag in header::iter_tags(f, 0x1000)? {
+
+    let offset = header::find_header(&f)?.unwrap();
+
+    for tag in header::iter_tags(f, offset)? {
         println!("{:#X?}", tag);
     }
 
