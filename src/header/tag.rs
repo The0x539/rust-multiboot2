@@ -1,18 +1,22 @@
-#[allow(non_snake_case, non_upper_case_globals)] // this is basically an enum
-pub mod TagType {
-    pub const End: u16 = 0;
-    pub const InfoRequest: u16 = 1;
-    pub const LoadAddr: u16 = 2;
-    pub const EntryAddr: u16 = 3;
-    pub const ConsoleFlags: u16 = 4;
-    pub const Framebuffer: u16 = 5;
-    pub const ModuleAlign: u16 = 6;
-    pub const EfiBootServices: u16 = 7;
-    pub const EntryAddrEfi32: u16 = 8;
-    pub const EntryAddrEfi64: u16 = 9;
-    pub const Relocatable: u16 = 10;
+use crate::pseudo_enum;
+
+pseudo_enum! {
+    pub TagType: u16;
+
+    End = 0,
+    InfoRequest = 1,
+    LoadAddr = 2,
+    EntryAddr = 3,
+    ConsoleFlags = 4,
+    Framebuffer = 5,
+    ModuleAlign = 6,
+    EfiBootServices = 7,
+    EntryAddrEfi32 = 8,
+    EntryAddrEfi64 = 9,
+    Relocatable = 10,
+
     #[cfg(feature = "hvm")]
-    pub const HybridRuntime: u16 = 0xF00D;
+    HybridRuntime = 0xF00D,
 }
 
 #[derive(Debug)]

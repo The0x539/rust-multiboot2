@@ -1,3 +1,4 @@
+use crate::pseudo_enum;
 use std::mem::size_of;
 use std::io::{Result, Write};
 use byteorder::{WriteBytesExt, LE};
@@ -10,13 +11,15 @@ pub struct MemMapEntry {
     // 4 reserved bytes as padding
 }
 
-#[allow(non_snake_case, non_upper_case_globals)]
-pub mod TagType {
-    pub const End: u32 = 0;
-    pub const BasicMeminfo: u32 = 4;
-    pub const MemMap: u32 = 6;
+pseudo_enum! {
+    pub TagType: u32;
+
+    End = 0,
+    BasicMeminfo = 4,
+    MemMap = 6,
+
     #[cfg(feature = "hvm")]
-    pub const HybridRuntime: u32 = 0xF00DF00D;
+    HybridRuntime = 0xF00DF00D,
 }
 
 #[derive(Debug)]
