@@ -1,4 +1,5 @@
 mod header;
+mod bootinfo;
 
 fn main() -> std::io::Result<()> {
     let f = std::fs::File::open("nautilus_hrt.bin")?;
