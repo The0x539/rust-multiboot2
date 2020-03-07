@@ -1,4 +1,5 @@
-use std::io::{Result, Read, Seek};
+use byteorder::{ReadBytesExt, LE};
+use std::io::{Result, Read, Seek, SeekFrom};
 
 pub const HEADER_MAGIC: u32 = 0xE85250D6;
 

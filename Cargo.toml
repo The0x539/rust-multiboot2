@@ -9,4 +9,3 @@ hvm = []
 
 [dependencies]
 byteorder = "1"
-vm-memory = "*"
