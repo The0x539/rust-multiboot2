@@ -1,6 +1,6 @@
 [package]
-name = "multiboot"
-version = "0.0.0"
+name = "multiboot2-host"
+version = "0.1.0"
 authors = ["The0x539"]
 edition = "2018"
 
