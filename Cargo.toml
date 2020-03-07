@@ -3,6 +3,8 @@ name = "multiboot2-host"
 version = "0.1.0"
 authors = ["The0x539"]
 edition = "2018"
+license = "Apache-2.0"
+description = "An experimental Multiboot2 crate for VM hosts."
 
 [features]
 hvm = []
