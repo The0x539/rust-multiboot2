@@ -66,7 +66,7 @@ impl Tag {
         #[allow(unused_variables)]
         return 8 + match self {
             Tag::BasicMeminfo{mem_lower, mem_upper} => 8,
-            Tag::MemMap{entries} => size_of::<MemMapEntry>() * entries.len(),
+            Tag::MemMap{entries} => 8 + size_of::<MemMapEntry>() * entries.len(),
             #[cfg(feature = "hvm")]
             Tag::HybridRuntime{total_num_apics, first_hrt_apic_id, have_hrt_ioapic, first_hrt_ioapic_entry, cpu_freq_khz, hrt_flags, max_mem_mapped, first_hrt_gpa, boot_state_gpa, gva_offset, comm_page_gpa, hrt_int_vector} => 80,
             Tag::End => 0,
@@ -83,6 +83,8 @@ impl Tag {
                 buf.write_u32::<LE>(*mem_upper)?;
             },
             Tag::MemMap{entries} => {
+                buf.write_u32::<LE>(size_of::<MemMapEntry>() as u32)?;
+                buf.write_u32::<LE>(0)?; // entry_version
                 for entry in entries {
                     buf.write_u64::<LE>(entry.base_addr)?;
                     buf.write_u64::<LE>(entry.length)?;
