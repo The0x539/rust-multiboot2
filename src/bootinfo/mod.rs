@@ -9,7 +9,7 @@ use std::io::{
 use byteorder::{WriteBytesExt, LE};
 
 mod tag;
-pub use tag::{Tag, TagType, MemMapEntry};
+pub use tag::{Tag, TagType, MemMapEntry, RegionType};
 
 pub fn bootinfo_size(tags: &[Tag]) -> u32 {
     // for some reason, rust is complaining about adding 8 to the list comp

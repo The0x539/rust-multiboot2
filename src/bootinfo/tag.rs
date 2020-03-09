@@ -22,6 +22,15 @@ pseudo_enum! {
     HybridRuntime = 0xF00DF00D,
 }
 
+pseudo_enum! {
+    pub RegionType: u32;
+
+    Available = 1,
+    AcpiReclaimable = 3,
+    NonVolatile = 4,
+    Defective = 5,
+}
+
 #[derive(Debug)]
 pub enum Tag {
     BasicMeminfo {
