@@ -1,6 +1,8 @@
+use std::convert::TryFrom;
+
 use byteorder::{ReadBytesExt, LE};
 use num_enum::TryFromPrimitive;
-use std::convert::TryFrom;
+use thiserror::Error;
 
 #[repr(u16)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, TryFromPrimitive)]
@@ -71,8 +73,12 @@ impl TagType {
             }
         };
 
-        // TODO: actual error
-        assert_eq!(size, tag.size());
+        if size != tag.size() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("Unexpected tag size: expected {}, got {}", tag.size(), size),
+            ));
+        }
 
         Ok(tag)
     }
@@ -116,11 +122,15 @@ pub enum Tag {
         comm_page_gpa: u64,
         int_vec: u64,
     },
-    Unknown(
-        u16, //type
-        u16, //flags
-        u32, //size
-    ),
+}
+
+#[derive(Error, Debug)]
+#[error("{self:?}")]
+pub struct UnknownTag {
+    tag_type: u16,
+    flags: u16,
+    size: u32,
+    data: Vec<u8>,
 }
 
 impl Tag {
@@ -136,7 +146,6 @@ impl Tag {
             #[cfg(feature = "hvm")]
             Self::HybridRuntime { .. } => 56,
             Self::InfoRequest { mbi_tag_types } => 4 * mbi_tag_types.len() as u32 + 8,
-            Self::Unknown(_, _, ref size) => *size,
         }
     }
 
@@ -148,7 +157,18 @@ impl Tag {
         let tag = if let Ok(tag_type) = TagType::try_from(ty) {
             tag_type.read_fields(size, &mut r)?
         } else {
-            Tag::Unknown(ty, flags, size)
+            let mut data = vec![0u8; size as usize - 8];
+            r.read_exact(&mut data)?;
+            let unknown_tag = UnknownTag {
+                tag_type: ty,
+                flags,
+                size,
+                data,
+            };
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                unknown_tag,
+            ));
         };
 
         Ok(tag)
