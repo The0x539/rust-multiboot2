@@ -1,7 +1,8 @@
-use crate::pseudo_enum;
 use std::mem::size_of;
 use std::io::{Result, Write};
 use byteorder::{WriteBytesExt, LE};
+
+use num_enum::IntoPrimitive;
 
 #[derive(Debug)]
 pub struct MemMapEntry {
@@ -11,9 +12,9 @@ pub struct MemMapEntry {
     // 4 reserved bytes as padding
 }
 
-pseudo_enum! {
-    pub TagType: u32;
-
+#[repr(u32)]
+#[derive(IntoPrimitive)]
+pub enum TagType {
     End = 0,
     BasicMeminfo = 4,
     MemMap = 6,
@@ -22,9 +23,9 @@ pseudo_enum! {
     HybridRuntime = 0xF00DF00D,
 }
 
-pseudo_enum! {
-    pub RegionType: u32;
-
+#[repr(u32)]
+#[derive(IntoPrimitive)]
+pub enum RegionType {
     Available = 1,
     AcpiReclaimable = 3,
     NonVolatile = 4,
@@ -60,7 +61,7 @@ pub enum Tag {
 }
 
 impl Tag {
-    pub fn get_type(&self) -> u32 {
+    pub fn get_type(&self) -> TagType {
         #[allow(unused_variables)]
         match self {
             Tag::BasicMeminfo{mem_lower, mem_upper} => TagType::BasicMeminfo,
@@ -83,7 +84,7 @@ impl Tag {
     }
 
     pub fn write_tag<F: Write>(&self, mut buf: F) -> Result<()> {
-        buf.write_u32::<LE>(self.get_type())?;
+        buf.write_u32::<LE>(self.get_type().into())?;
         buf.write_u32::<LE>(self.get_size())?;
 
         match self {

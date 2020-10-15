@@ -2,6 +2,8 @@ use super::tag::{Tag, TagType};
 use super::Header;
 use byteorder::{ReadBytesExt, LE};
 
+use std::convert::TryFrom;
+
 use std::io::{
     Error,
     ErrorKind,
@@ -71,7 +73,8 @@ impl TagIter {
         let tag_flags = self.u16()?;
         let tag_size  = self.u32()?;
 
-        let tag = match tag_type {
+        let tag = if let Ok(ty) = TagType::try_from(tag_type) {
+            match ty {
                 TagType::End  => {
                     self.done = true;
                     Tag::End
@@ -95,8 +98,9 @@ impl TagIter {
 
                 #[cfg(feature = "hvm")]
                 TagType::HybridRuntime => tag!(HybridRuntime: u64, u64, u64, u64, u64, u64),
-
-                _ => Tag::Unknown(tag_type, tag_flags, tag_size),
+            }
+        } else {
+            Tag::Unknown(tag_type, tag_flags, tag_size)
         };
 
         self.buf.set_position((self.buf.position() + 7) & !7);

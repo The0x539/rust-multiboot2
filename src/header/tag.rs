@@ -1,8 +1,8 @@
-use crate::pseudo_enum;
+use num_enum::TryFromPrimitive;
 
-pseudo_enum! {
-    pub TagType: u16;
-
+#[repr(u16)]
+#[derive(TryFromPrimitive)]
+pub enum TagType {
     End = 0,
     InfoRequest = 1,
     LoadAddr = 2,
