@@ -59,7 +59,7 @@ impl TagType {
             #[cfg(feature = "hvm")]
             Self::HybridRuntime => {
                 let mut fields = [0u64; 6];
-                r.read_u64_into(&mut fields)?;
+                r.read_u64_into::<LE>(&mut fields)?;
                 Tag::HybridRuntime {
                     flags: fields[0],
                     gpa_map_req: fields[1],
