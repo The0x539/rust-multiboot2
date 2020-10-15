@@ -5,18 +5,11 @@ mod tag;
 pub use tag::{MemMapEntry, RegionType, Tag, TagType};
 
 pub fn bootinfo_size(tags: &[Tag]) -> u32 {
-    // for some reason, rust is complaining about adding 8 to the list comp
-    // so we're doing it the old fashionwed way
-    let mut sum: u32 = 8;
-    for tag in tags {
-        sum += tag.get_size();
-    }
-    sum
+    8 + tags.iter().map(Tag::get_size).sum::<u32>()
 }
 
 pub fn write_bootinfo<F: Write + Seek>(tags: &[Tag], mut buf: F, offset: u64) -> Result<()> {
-    if let Some(Tag::End) = tags.last() {
-    } else {
+    if tags.last() != Some(&Tag::End) {
         return Err(Error::new(
             ErrorKind::InvalidData,
             "bootinfo tags must end with Tag::End",

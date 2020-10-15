@@ -4,7 +4,7 @@ use std::mem::size_of;
 
 use num_enum::IntoPrimitive;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct MemMapEntry {
     pub base_addr: u64,
     pub length: u64,
@@ -32,7 +32,7 @@ pub enum RegionType {
     Defective = 5,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Tag {
     BasicMeminfo {
         mem_lower: u32,

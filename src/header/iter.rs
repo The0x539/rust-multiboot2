@@ -28,7 +28,7 @@ impl TagIter {
             ));
         }
 
-        let mut buf: Vec<u8> = vec![0; header.header_length as usize - 16];
+        let mut buf = vec![0u8; header.header_length as usize - 16];
         kernel_image.read_exact(&mut buf)?;
 
         Ok(TagIter {
@@ -75,7 +75,7 @@ impl TagIter {
                 }
 
                 TagType::InfoRequest => {
-                    let mut mbi_tag_types: Vec<u32> = vec![0; (tag_size as usize - 8) / 4];
+                    let mut mbi_tag_types = vec![0u32; (tag_size as usize - 8) / 4];
                     self.buf.read_u32_into::<LE>(&mut mbi_tag_types)?;
                     Tag::InfoRequest(mbi_tag_types)
                 }
