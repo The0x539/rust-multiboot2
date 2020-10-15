@@ -1,6 +1,5 @@
 use byteorder::{WriteBytesExt, LE};
 use std::io::{Result, Write};
-use std::mem::size_of;
 
 use num_enum::IntoPrimitive;
 
@@ -11,6 +10,9 @@ pub struct MemMapEntry {
     pub entry_type: u32,
     // 4 reserved bytes as padding
 }
+
+const MEMMAP_ENTRY_VERSION: u32 = 0;
+const MEMMAP_ENTRY_SIZE: u32 = 24;
 
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, IntoPrimitive)]
@@ -74,7 +76,7 @@ impl Tag {
     pub fn get_size(&self) -> u32 {
         let body_size = match self {
             Tag::BasicMeminfo { .. } => 8,
-            Tag::MemMap { entries } => 8 + (size_of::<MemMapEntry>() * entries.len()) as u32,
+            Tag::MemMap { entries } => 8 + entries.len() as u32 * MEMMAP_ENTRY_SIZE,
             #[cfg(feature = "hvm")]
             Tag::HybridRuntime { .. } => 80,
             Tag::End => 0,
@@ -82,26 +84,26 @@ impl Tag {
         body_size + 8
     }
 
-    pub fn write_tag<F: Write>(&self, mut buf: F) -> Result<()> {
-        buf.write_u32::<LE>(self.get_type().into())?;
-        buf.write_u32::<LE>(self.get_size())?;
+    pub fn write_tag<W: Write>(&self, mut w: W) -> Result<()> {
+        w.write_u32::<LE>(self.get_type().into())?;
+        w.write_u32::<LE>(self.get_size())?;
 
         match self {
             Tag::BasicMeminfo {
                 mem_lower,
                 mem_upper,
             } => {
-                buf.write_u32::<LE>(*mem_lower)?;
-                buf.write_u32::<LE>(*mem_upper)?;
+                w.write_u32::<LE>(*mem_lower)?;
+                w.write_u32::<LE>(*mem_upper)?;
             }
             Tag::MemMap { entries } => {
-                buf.write_u32::<LE>(size_of::<MemMapEntry>() as u32)?; // entry_size
-                buf.write_u32::<LE>(0)?; // entry_version
+                w.write_u32::<LE>(MEMMAP_ENTRY_SIZE)?;
+                w.write_u32::<LE>(MEMMAP_ENTRY_VERSION)?;
                 for entry in entries {
-                    buf.write_u64::<LE>(entry.base_addr)?;
-                    buf.write_u64::<LE>(entry.length)?;
-                    buf.write_u32::<LE>(entry.entry_type)?;
-                    buf.write_u32::<LE>(0)?;
+                    w.write_u64::<LE>(entry.base_addr)?;
+                    w.write_u64::<LE>(entry.length)?;
+                    w.write_u32::<LE>(entry.entry_type)?;
+                    w.write_u32::<LE>(0)?; // reserved (padding)
                 }
             }
             #[cfg(feature = "hvm")]
@@ -125,7 +127,7 @@ impl Tag {
                     *have_hrt_ioapic as u32,
                     *first_hrt_ioapic_entry,
                 ] {
-                    buf.write_u32::<LE>(*x)?;
+                    w.write_u32::<LE>(*x)?;
                 }
                 for x in &[
                     *cpu_freq_khz,
@@ -136,10 +138,10 @@ impl Tag {
                     *gva_offset,
                     *comm_page_gpa,
                 ] {
-                    buf.write_u64::<LE>(*x)?;
+                    w.write_u64::<LE>(*x)?;
                 }
-                buf.write_u8(*hrt_int_vector)?;
-                buf.write(&[0u8; 7])?;
+                w.write_u8(*hrt_int_vector)?;
+                w.write(&[0u8; 7])?;
             }
             Tag::End => {}
         }
