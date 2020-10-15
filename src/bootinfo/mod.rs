@@ -1,15 +1,8 @@
-use std::io::{
-    Result,
-    Error,
-    ErrorKind,
-    Write,
-    Seek,
-    SeekFrom,
-};
 use byteorder::{WriteBytesExt, LE};
+use std::io::{Error, ErrorKind, Result, Seek, SeekFrom, Write};
 
 mod tag;
-pub use tag::{Tag, TagType, MemMapEntry, RegionType};
+pub use tag::{MemMapEntry, RegionType, Tag, TagType};
 
 pub fn bootinfo_size(tags: &[Tag]) -> u32 {
     // for some reason, rust is complaining about adding 8 to the list comp
@@ -21,13 +14,13 @@ pub fn bootinfo_size(tags: &[Tag]) -> u32 {
     sum
 }
 
-pub fn write_bootinfo<F: Write + Seek>(
-    tags: &[Tag],
-    mut buf: F,
-    offset: u64,
-) -> Result<()> {
-    if let Some(Tag::End) = tags.last() {} else {
-        return Err(Error::new(ErrorKind::InvalidData, "bootinfo tags must end with Tag::End"));
+pub fn write_bootinfo<F: Write + Seek>(tags: &[Tag], mut buf: F, offset: u64) -> Result<()> {
+    if let Some(Tag::End) = tags.last() {
+    } else {
+        return Err(Error::new(
+            ErrorKind::InvalidData,
+            "bootinfo tags must end with Tag::End",
+        ));
     }
 
     buf.seek(SeekFrom::Start(offset))?;

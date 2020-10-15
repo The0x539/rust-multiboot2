@@ -22,34 +22,34 @@ pub enum TagType {
 #[derive(Debug)]
 pub enum Tag {
     End,
-    InfoRequest (
+    InfoRequest(
         Vec<u32>, //mbi_tag_types
     ),
-    LoadAddr (
+    LoadAddr(
         u32, //header_addr
         u32, //load_addr
         u32, //load_end_addr
         u32, //bss_end_addr
     ),
-    EntryAddr (u32),
-    EntryAddrEfi32 (u32),
-    EntryAddrEfi64 (u32),
-    ConsoleFlags (u32),
-    Framebuffer (
+    EntryAddr(u32),
+    EntryAddrEfi32(u32),
+    EntryAddrEfi64(u32),
+    ConsoleFlags(u32),
+    Framebuffer(
         u32, //width
         u32, //height
         u32, //depth
     ),
     ModuleAlign,
     EfiBootServices,
-    Relocatable (
+    Relocatable(
         u32, //min_addr
         u32, //max_addr
         u32, //align
         u32, //preference
     ),
     #[cfg(feature = "hvm")]
-    HybridRuntime (
+    HybridRuntime(
         u64, //flags
         u64, //gpa_map_req
         u64, //hrt_hihalf_offset
@@ -57,7 +57,7 @@ pub enum Tag {
         u64, //comm_page_gpa
         u64, //int_vec
     ),
-    Unknown (
+    Unknown(
         u16, //type
         u16, //flags
         u32, //size
