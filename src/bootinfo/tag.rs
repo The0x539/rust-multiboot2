@@ -1,6 +1,6 @@
-use byteorder::{WriteBytesExt, LE};
-use std::io::{Result, Write};
+use std::io::Write;
 
+use byteorder::{WriteBytesExt, LE};
 use num_enum::IntoPrimitive;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -63,7 +63,7 @@ pub enum Tag {
 }
 
 impl Tag {
-    pub fn get_type(&self) -> TagType {
+    pub fn tag_type(&self) -> TagType {
         match self {
             Tag::BasicMeminfo { .. } => TagType::BasicMeminfo,
             Tag::MemMap { .. } => TagType::MemMap,
@@ -73,7 +73,7 @@ impl Tag {
         }
     }
 
-    pub fn get_size(&self) -> u32 {
+    pub fn size(&self) -> u32 {
         let body_size = match self {
             Tag::BasicMeminfo { .. } => 8,
             Tag::MemMap { entries } => 8 + entries.len() as u32 * MEMMAP_ENTRY_SIZE,
@@ -84,9 +84,9 @@ impl Tag {
         body_size + 8
     }
 
-    pub fn write_tag<W: Write>(&self, mut w: W) -> Result<()> {
-        w.write_u32::<LE>(self.get_type().into())?;
-        w.write_u32::<LE>(self.get_size())?;
+    pub fn write_to<W: Write>(&self, mut w: W) -> std::io::Result<()> {
+        w.write_u32::<LE>(self.tag_type().into())?;
+        w.write_u32::<LE>(self.size())?;
 
         match self {
             Tag::BasicMeminfo {
