@@ -1,8 +1,5 @@
-use super::tag::{Tag, TagType};
-use super::Header;
+use super::{tag::Tag, Header};
 use byteorder::{ReadBytesExt, LE};
-
-use std::convert::TryFrom;
 
 use std::io::{Cursor, Error, ErrorKind, Read, Result, Seek, SeekFrom};
 
@@ -42,20 +39,17 @@ impl TagIter {
             return Err(Error::new(ErrorKind::UnexpectedEof, "No more tags"));
         }
 
-        let tag_type = self.buf.read_u16::<LE>()?;
-        let tag_flags = self.buf.read_u16::<LE>()?;
-        let tag_size = self.buf.read_u32::<LE>()?;
-
-        let tag = match TagType::try_from(tag_type) {
-            Ok(ty) => ty.read_fields(tag_size, &mut self.buf)?,
-            Err(_) => Tag::Unknown(tag_type, tag_flags, tag_size),
-        };
+        let tag = Tag::from_reader(&mut self.buf)?;
+        if tag == Tag::End {
+            self.done = true;
+        }
 
         self.buf.set_position((self.buf.position() + 7) & !7);
 
         Ok(tag)
     }
 }
+
 impl Iterator for TagIter {
     type Item = Result<Tag>;
     fn next(&mut self) -> Option<Self::Item> {

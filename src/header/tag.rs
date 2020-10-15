@@ -1,6 +1,6 @@
-use num_enum::TryFromPrimitive;
-
 use byteorder::{ReadBytesExt, LE};
+use num_enum::TryFromPrimitive;
+use std::convert::TryFrom;
 
 #[repr(u16)]
 #[derive(TryFromPrimitive)]
@@ -22,11 +22,7 @@ pub enum TagType {
 }
 
 impl TagType {
-    pub(super) fn read_fields<R: std::io::Read>(
-        &self,
-        size: u32,
-        mut r: R,
-    ) -> std::io::Result<Tag> {
+    fn read_fields<R: std::io::Read>(&self, size: u32, mut r: R) -> std::io::Result<Tag> {
         let mut get_u32 = || r.read_u32::<LE>();
 
         let tag = match self {
@@ -82,7 +78,7 @@ impl TagType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Tag {
     End,
     InfoRequest {
@@ -128,7 +124,7 @@ pub enum Tag {
 }
 
 impl Tag {
-    fn size(&self) -> u32 {
+    pub fn size(&self) -> u32 {
         match self {
             Self::End | Self::ModuleAlign | Self::EfiBootServices => 8,
             Self::EntryAddr(..)
@@ -142,5 +138,19 @@ impl Tag {
             Self::InfoRequest { mbi_tag_types } => 4 * mbi_tag_types.len() as u32 + 8,
             Self::Unknown(_, _, ref size) => *size,
         }
+    }
+
+    pub fn from_reader<R: std::io::Read>(mut r: R) -> std::io::Result<Self> {
+        let ty = r.read_u16::<LE>()?;
+        let flags = r.read_u16::<LE>()?;
+        let size = r.read_u32::<LE>()?;
+
+        let tag = if let Ok(tag_type) = TagType::try_from(ty) {
+            tag_type.read_fields(size, &mut r)?
+        } else {
+            Tag::Unknown(ty, flags, size)
+        };
+
+        Ok(tag)
     }
 }
