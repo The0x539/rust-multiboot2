@@ -134,6 +134,24 @@ pub struct UnknownTag {
 }
 
 impl Tag {
+    pub fn tag_type(&self) -> TagType {
+        match self {
+            Self::End => TagType::End,
+            Self::InfoRequest { .. } => TagType::InfoRequest,
+            Self::LoadAddr { .. } => TagType::LoadAddr,
+            Self::EntryAddr { .. } => TagType::EntryAddr,
+            Self::EntryAddrEfi32(..) => TagType::EntryAddrEfi32,
+            Self::EntryAddrEfi64(..) => TagType::EntryAddrEfi64,
+            Self::ConsoleFlags(..) => TagType::ConsoleFlags,
+            Self::Framebuffer { .. } => TagType::Framebuffer,
+            Self::ModuleAlign => TagType::ModuleAlign,
+            Self::EfiBootServices => TagType::EfiBootServices,
+            Self::Relocatable { .. } => TagType::Relocatable,
+            #[cfg(feature = "hvm")]
+            Self::HybridRuntime { .. } => TagType::HybridRuntime,
+        }
+    }
+
     pub fn size(&self) -> u32 {
         match self {
             Self::End | Self::ModuleAlign | Self::EfiBootServices => 8,
