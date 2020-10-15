@@ -37,64 +37,18 @@ impl TagIter {
         })
     }
 
-    fn u16(&mut self) -> Result<u16> {
-        self.buf.read_u16::<LE>()
-    }
-    fn u32(&mut self) -> Result<u32> {
-        self.buf.read_u32::<LE>()
-    }
-    #[allow(dead_code)]
-    fn u64(&mut self) -> Result<u64> {
-        self.buf.read_u64::<LE>()
-    }
-
     fn next_tag(&mut self) -> Result<Tag> {
-        macro_rules! tag {
-            ($tag:ident: $($memb:ident$(,)?)+) => {
-                Tag::$tag($(self.$memb()?),+)
-            };
-
-            ($tag:ident) => {
-                Tag::$tag
-            };
-        }
-
         if self.done {
             return Err(Error::new(ErrorKind::UnexpectedEof, "No more tags"));
         }
 
-        let tag_type = self.u16()?;
-        let tag_flags = self.u16()?;
-        let tag_size = self.u32()?;
+        let tag_type = self.buf.read_u16::<LE>()?;
+        let tag_flags = self.buf.read_u16::<LE>()?;
+        let tag_size = self.buf.read_u32::<LE>()?;
 
-        let tag = if let Ok(ty) = TagType::try_from(tag_type) {
-            match ty {
-                TagType::End => {
-                    self.done = true;
-                    Tag::End
-                }
-
-                TagType::InfoRequest => {
-                    let mut mbi_tag_types = vec![0u32; (tag_size as usize - 8) / 4];
-                    self.buf.read_u32_into::<LE>(&mut mbi_tag_types)?;
-                    Tag::InfoRequest(mbi_tag_types)
-                }
-
-                TagType::LoadAddr => tag!(LoadAddr: u32, u32, u32, u32),
-                TagType::EntryAddr => tag!(EntryAddr: u32),
-                TagType::EntryAddrEfi32 => tag!(EntryAddrEfi32: u32),
-                TagType::EntryAddrEfi64 => tag!(EntryAddrEfi64: u32),
-                TagType::ConsoleFlags => tag!(ConsoleFlags: u32),
-                TagType::Framebuffer => tag!(Framebuffer: u32, u32, u32),
-                TagType::ModuleAlign => tag!(ModuleAlign),
-                TagType::EfiBootServices => tag!(EfiBootServices),
-                TagType::Relocatable => tag!(Relocatable: u32, u32, u32, u32),
-
-                #[cfg(feature = "hvm")]
-                TagType::HybridRuntime => tag!(HybridRuntime: u64, u64, u64, u64, u64, u64),
-            }
-        } else {
-            Tag::Unknown(tag_type, tag_flags, tag_size)
+        let tag = match TagType::try_from(tag_type) {
+            Ok(ty) => ty.read_fields(tag_size, &mut self.buf)?,
+            Err(_) => Tag::Unknown(tag_type, tag_flags, tag_size),
         };
 
         self.buf.set_position((self.buf.position() + 7) & !7);
