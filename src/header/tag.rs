@@ -3,7 +3,7 @@ use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
 
 #[repr(u16)]
-#[derive(TryFromPrimitive)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, TryFromPrimitive)]
 pub enum TagType {
     End = 0,
     InfoRequest = 1,
@@ -78,7 +78,7 @@ impl TagType {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Tag {
     End,
     InfoRequest {

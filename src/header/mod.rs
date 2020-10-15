@@ -3,13 +3,14 @@ use std::io::{Read, Result, Seek, SeekFrom};
 
 pub const HEADER_MAGIC: u32 = 0xE85250D6;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Header {
     pub magic: u32,
     pub architecture: u32,
     pub header_length: u32,
     pub checksum: u32,
 }
+
 impl Header {
     pub fn is_valid(&self) -> bool {
         if self.magic != HEADER_MAGIC {
