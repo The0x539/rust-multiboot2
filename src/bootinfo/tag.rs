@@ -62,57 +62,24 @@ pub enum Tag {
 
 impl Tag {
     pub fn get_type(&self) -> TagType {
-        #[allow(unused_variables)]
         match self {
-            Tag::BasicMeminfo {
-                mem_lower,
-                mem_upper,
-            } => TagType::BasicMeminfo,
-            Tag::MemMap { entries } => TagType::MemMap,
+            Tag::BasicMeminfo { .. } => TagType::BasicMeminfo,
+            Tag::MemMap { .. } => TagType::MemMap,
             #[cfg(feature = "hvm")]
-            Tag::HybridRuntime {
-                total_num_apics,
-                first_hrt_apic_id,
-                have_hrt_ioapic,
-                first_hrt_ioapic_entry,
-                cpu_freq_khz,
-                hrt_flags,
-                max_mem_mapped,
-                first_hrt_gpa,
-                boot_state_gpa,
-                gva_offset,
-                comm_page_gpa,
-                hrt_int_vector,
-            } => TagType::HybridRuntime,
+            Tag::HybridRuntime { .. } => TagType::HybridRuntime,
             Tag::End => TagType::End,
         }
     }
 
     pub fn get_size(&self) -> u32 {
-        #[allow(unused_variables)]
-        return 8 + match self {
-            Tag::BasicMeminfo {
-                mem_lower,
-                mem_upper,
-            } => 8,
-            Tag::MemMap { entries } => 8 + size_of::<MemMapEntry>() * entries.len(),
+        let body_size = match self {
+            Tag::BasicMeminfo { .. } => 8,
+            Tag::MemMap { entries } => 8 + (size_of::<MemMapEntry>() * entries.len()) as u32,
             #[cfg(feature = "hvm")]
-            Tag::HybridRuntime {
-                total_num_apics,
-                first_hrt_apic_id,
-                have_hrt_ioapic,
-                first_hrt_ioapic_entry,
-                cpu_freq_khz,
-                hrt_flags,
-                max_mem_mapped,
-                first_hrt_gpa,
-                boot_state_gpa,
-                gva_offset,
-                comm_page_gpa,
-                hrt_int_vector,
-            } => 80,
+            Tag::HybridRuntime { .. } => 80,
             Tag::End => 0,
-        } as u32;
+        };
+        body_size + 8
     }
 
     pub fn write_tag<F: Write>(&self, mut buf: F) -> Result<()> {
@@ -128,7 +95,7 @@ impl Tag {
                 buf.write_u32::<LE>(*mem_upper)?;
             }
             Tag::MemMap { entries } => {
-                buf.write_u32::<LE>(size_of::<MemMapEntry>() as u32)?;
+                buf.write_u32::<LE>(size_of::<MemMapEntry>() as u32)?; // entry_size
                 buf.write_u32::<LE>(0)?; // entry_version
                 for entry in entries {
                     buf.write_u64::<LE>(entry.base_addr)?;
@@ -152,19 +119,27 @@ impl Tag {
                 comm_page_gpa,
                 hrt_int_vector,
             } => {
-                buf.write_u32::<LE>(*total_num_apics)?;
-                buf.write_u32::<LE>(*first_hrt_apic_id)?;
-                buf.write_u32::<LE>(*have_hrt_ioapic as u32)?;
-                buf.write_u32::<LE>(*first_hrt_ioapic_entry)?;
-                buf.write_u64::<LE>(*cpu_freq_khz)?;
-                buf.write_u64::<LE>(*hrt_flags)?;
-                buf.write_u64::<LE>(*max_mem_mapped)?;
-                buf.write_u64::<LE>(*first_hrt_gpa)?;
-                buf.write_u64::<LE>(*boot_state_gpa)?;
-                buf.write_u64::<LE>(*gva_offset)?;
-                buf.write_u64::<LE>(*comm_page_gpa)?;
+                for x in &[
+                    *total_num_apics,
+                    *first_hrt_apic_id,
+                    *have_hrt_ioapic as u32,
+                    *first_hrt_ioapic_entry,
+                ] {
+                    buf.write_u32::<LE>(*x)?;
+                }
+                for x in &[
+                    *cpu_freq_khz,
+                    *hrt_flags,
+                    *max_mem_mapped,
+                    *first_hrt_gpa,
+                    *boot_state_gpa,
+                    *gva_offset,
+                    *comm_page_gpa,
+                ] {
+                    buf.write_u64::<LE>(*x)?;
+                }
                 buf.write_u8(*hrt_int_vector)?;
-                buf.write(&[0, 0, 0, 0, 0, 0, 0])?;
+                buf.write(&[0u8; 7])?;
             }
             Tag::End => {}
         }
