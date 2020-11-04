@@ -73,11 +73,19 @@ impl TagType {
             }
         };
 
-        if size != tag.size() {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                format!("Unexpected tag size: expected {}, got {}", tag.size(), size),
-            ));
+        match size.checked_sub(tag.size()) {
+            Some(0) => (),
+            Some(n @ 1..=7) => {
+                // Padding bytes; just read past them
+                let mut dummy = [0; 7];
+                r.read_exact(&mut dummy[0..n as usize])?;
+            }
+            _ => {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!("Unexpected tag size: expected {}, got {}", tag.size(), size),
+                ))
+            }
         }
 
         Ok(tag)
